@@ -1,3 +1,5 @@
 
 staging:
   environment: staging
+  payload:
+    testKey: 'pavel bedzie skakal'
