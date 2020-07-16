@@ -1,11 +1,11 @@
-# .github/workflows/deployment.yml
-name: Deployment
+---
+name: Deployment management
 
 on: ['deployment']
 
 jobs:
   deployment:
-    runs-on: 'ubuntu-latest'
+    runs-on: ubuntu-latest
 
     steps:
     - name: 'deployment pending'
@@ -16,8 +16,10 @@ jobs:
 
     - name: deploy
       run: |
-        echo "environment - ${{ github.event.deployment.task }}"
-        echo "payload - ${{ github.event.deployment.payload }}"
+        echo "ref - ${{ github.event.deployment.ref }}"
+        echo "task - ${{ github.event.deployment.task }}"
+        echo "environment - ${{ github.event.deployment.environment }}"
+        echo "payload - ${{ toJSON(github.event.deployment.environment) }}"
 
     - name: 'deployment success'
       if: success()
