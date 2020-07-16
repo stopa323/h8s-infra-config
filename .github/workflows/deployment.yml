@@ -15,12 +15,12 @@ jobs:
         token: '${{ github.token }}'
 
     - name: Deploy environment
-      if: github.event.deployment.payload == 'deploy'
+      if: github.event.deployment.payload.operation == 'deploy'
       run: |
         echo "Deploying ${{ github.event.deployment.environment }}..."
 
     - name: Delete environment
-      if: github.event.deployment.payload == 'delete'
+      if: github.event.deployment.payload.operation == 'delete'
       run: |
         echo "Deleting ${{ github.event.deployment.environment }}..."
 
