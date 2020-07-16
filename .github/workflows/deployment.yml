@@ -19,7 +19,7 @@ jobs:
         echo "ref - ${{ github.event.deployment.ref }}"
         echo "task - ${{ github.event.deployment.task }}"
         echo "environment - ${{ github.event.deployment.environment }}"
-        echo "payload - ${{ toJSON(github.event.deployment.environment) }}"
+        echo "payload - ${{ toJSON(github.event.deployment.payload) }}"
 
     - name: 'deployment success'
       if: success()
