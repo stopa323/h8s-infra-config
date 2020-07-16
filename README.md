@@ -1,1 +1,1 @@
-# h8s-ci-infra
+# h8s-infra-config
