@@ -1,5 +1,10 @@
 
-staging:
+create-staging:
   environment: staging
   payload:
-    testKey: 'pavel bedzie skakal'
+    operation: deploy
+
+delete-staging:
+  environment: staging
+  payload:
+    operation: delete

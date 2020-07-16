@@ -14,22 +14,23 @@ jobs:
         state: 'pending'
         token: '${{ github.token }}'
 
-    - name: deploy
+    - name: Deploy environment
+      if: github.event.deployment.payload == 'deploy'
       run: |
-        echo "ref - ${{ github.event.deployment.ref }}"
-        echo "task - ${{ github.event.deployment.task }}"
-        echo "environment - ${{ github.event.deployment.environment }}"
-        echo "payload - ${{ toJSON(github.event.deployment.payload) }}"
+        echo "Deploying ${{ github.event.deployment.environment }}..."
+
+    - name: Delete environment
+      if: github.event.deployment.payload == 'delete'
+      run: |
+        echo "Deleting ${{ github.event.deployment.environment }}..."
 
     - name: 'deployment success'
-      if: success()
       uses: 'deliverybot/deployment-status@master'
       with:
         state: 'success'
         token: '${{ github.token }}'
 
     - name: 'deployment failure'
-      if: failure()
       uses: 'deliverybot/deployment-status@master'
       with:
         state: 'failure'
