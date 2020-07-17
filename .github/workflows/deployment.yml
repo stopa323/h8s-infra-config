@@ -1,37 +1,39 @@
 ---
-name: Deployment management
+name: Deployment lifecycle
 
 on: ['deployment']
 
 jobs:
-  deployment:
+  lifecycleStagingEnv:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 'deployment pending'
-      uses: 'deliverybot/deployment-status@master'
-      with:
-        state: 'pending'
-        token: '${{ github.token }}'
+      - name: Initialize deployment status
+        uses: deliverybot/deployment-status@v1
+        with:
+          state: pending
+          token: ${{ github.token }}
 
-    - name: Deploy environment
-      if: github.event.deployment.payload.operation == 'deploy'
-      run: |
-        echo "Deploying ${{ github.event.deployment.environment }}..."
+      - name: Deploy staging environment
+        if: github.event.deployment.payload.operation == 'deploy'
+        run: |
+          echo "Deploying ${{ github.event.deployment.environment }}..."
 
-    - name: Delete environment
-      if: github.event.deployment.payload.operation == 'delete'
-      run: |
-        echo "Deleting ${{ github.event.deployment.environment }}..."
+      - name: Delete staging environment
+        if: github.event.deployment.payload.operation == 'delete'
+        run: |
+          echo "Deleting ${{ github.event.deployment.environment }}..."
 
-    - name: 'deployment success'
-      uses: 'deliverybot/deployment-status@master'
-      with:
-        state: 'success'
-        token: '${{ github.token }}'
+      - name: Set status to 'success'
+        if: success()
+        uses: deliverybot/deployment-status@v1
+        with:
+          state: success
+          token: ${{ github.token }}
 
-    - name: 'deployment failure'
-      uses: 'deliverybot/deployment-status@master'
-      with:
-        state: 'failure'
-        token: '${{ github.token }}'
+      - name: Set status to 'failure'
+        if: failure()
+        uses: deliverybot/deployment-status@v1
+        with:
+          state: failure
+          token: ${{ github.token }}
