@@ -2,9 +2,9 @@
 create-staging:
   environment: staging
   payload:
-    operation: deploy
+    operation: create
 
-delete-staging:
+destroy-staging:
   environment: staging
   payload:
-    operation: delete
+    operation: destroy
