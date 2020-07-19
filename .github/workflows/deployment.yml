@@ -29,10 +29,16 @@ jobs:
       - name: Create staging environment
         if: github.event.deployment.payload.operation == 'deploy'
         run: terraform apply -auto-approve terraform/aws/environments/stage
+        env:
+          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Destroy staging environment
         if: github.event.deployment.payload.operation == 'delete'
         run: terraform destroy -auto-approve terraform/aws/environments/stage
+        env:
+          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Set status to 'success'
         if: success()
