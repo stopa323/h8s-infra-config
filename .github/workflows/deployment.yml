@@ -23,31 +23,38 @@ jobs:
       - name: Terraform Init
         run: terraform init terraform/aws/environments/stage
         env:
-          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Create staging environment
         if: github.event.deployment.payload.operation == 'create'
         run: terraform apply -auto-approve terraform/aws/environments/stage
         env:
-          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Destroy staging environment
         if: github.event.deployment.payload.operation == 'destroy'
         run: terraform destroy -auto-approve terraform/aws/environments/stage
         env:
-          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Set status to 'success'
-        if: success()
+      - name: Activate deployment
+        if: ${{ success() && github.event.deployment.payload.operation == 'create' }}
         uses: deliverybot/deployment-status@v1
         with:
           state: success
           token: ${{ github.token }}
 
-      - name: Set status to 'failure'
+      - name: Deactivate deployment
+        if: ${{ success() && github.event.deployment.payload.operation == 'destroy' }}
+        uses: deliverybot/deployment-status@v1
+        with:
+          state: inactive
+          token: ${{ github.token }}
+
+      - name: Fail deployment
         if: failure()
         uses: deliverybot/deployment-status@v1
         with:
