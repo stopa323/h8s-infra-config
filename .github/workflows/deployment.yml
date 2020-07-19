@@ -4,7 +4,7 @@ name: Deployment lifecycle
 on: ['deployment']
 
 jobs:
-  lifecycleStagingEnv:
+  staging:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,15 +26,13 @@ jobs:
           AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Deploy staging environment
+      - name: Create staging environment
         if: github.event.deployment.payload.operation == 'deploy'
-        run: |
-          echo "Deploying ${{ github.event.deployment.environment }}..."
+        run: terraform apply terraform/aws/environments/stage -auto-approve
 
-      - name: Delete staging environment
+      - name: Destroy staging environment
         if: github.event.deployment.payload.operation == 'delete'
-        run: |
-          echo "Deleting ${{ github.event.deployment.environment }}..."
+        run: terraform destroy terraform/aws/environments/stage -auto-approve
 
       - name: Set status to 'success'
         if: success()
