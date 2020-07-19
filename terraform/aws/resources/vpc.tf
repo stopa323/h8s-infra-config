@@ -21,7 +21,7 @@ resource "aws_vpc" "main" {
   }
 }
 
-resource "aws_subnet" "main" {
+resource "aws_subnet" "eks_subnet" {
   count = 2
 
   availability_zone       = data.aws_availability_zones.available.names[count.index]
@@ -55,6 +55,6 @@ resource "aws_route_table" "main" {
 resource "aws_route_table_association" "main" {
   count = 2
 
-  subnet_id      = aws_subnet.main.*.id[count.index]
+  subnet_id      = aws_subnet.eks_subnet.*.id[count.index]
   route_table_id = aws_route_table.main.id
 }

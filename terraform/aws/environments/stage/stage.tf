@@ -19,5 +19,6 @@ module "main" {
   vpc_cidr         = "10.0.0.0/16"
   subnet_octets    = "10.0"
 
-  cluster_name     = "s-my-cluster"
+  cluster_name     = "s-cluster"
+  worker_type      = "m5a.large"
 }
