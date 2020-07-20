@@ -1,0 +1,10 @@
+
+create-staging:
+  environment: staging
+  payload:
+    operation: create
+
+destroy-staging:
+  environment: staging
+  payload:
+    operation: destroy
