@@ -21,3 +21,10 @@ Switch to environment directory:
 ```
 cd aws/environments/stage
 ```
+
+Invoke Terraform commands:
+```
+terraform init
+terraform plan
+terraform apply
+```
