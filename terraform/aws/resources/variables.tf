@@ -2,27 +2,17 @@
 # Variables Configuration
 #
 
-variable "environment_code" {
-  description = "Environment code (s = staging, p = production)"
+variable "environment" {
+  description = "Environment code (staging | production)"
+  type        = string
+}
+
+variable "name_prefix" {
+  description = "Prefix for resources' name tag"
   type        = string
 }
 
 variable "vpc_cidr" {
-  description = "Region for EKS cluster"
-  type        = string
-}
-
-variable "subnet_octets" {
-  description = "First two octects of data center subnet e.g. the X.Y in X.Y.0.0"
-  type        = string
-}
-
-variable "cluster_name" {
-  description = "EKS cluster name"
-  type        = string
-}
-
-variable "worker_type" {
-  description = "EC2 instance type for kubernetes worker nodes"
+  description = "VPC CIDR with 16 bit prefix e.g. 10.0.0.0/16"
   type        = string
 }

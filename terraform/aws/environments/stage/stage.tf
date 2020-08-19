@@ -14,11 +14,8 @@ provider "aws" {
 module "main" {
   source = "../../resources"
 
-  environment_code = "s"
+  environment      = "staging"
+  name_prefix      = "h8s"
 
   vpc_cidr         = "10.0.0.0/16"
-  subnet_octets    = "10.0"
-
-  cluster_name     = "s-cluster"
-  worker_type      = "m5a.large"
 }
