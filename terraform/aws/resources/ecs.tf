@@ -76,6 +76,15 @@ resource "aws_alb_target_group" "horreum" {
   vpc_id      = "${aws_vpc.main.id}"
   target_type = "ip"
 
+  health_check {
+    # Todo: Add dedicated endpoint for basic checks
+    path     = "/docs"
+    port     = 8003
+    protocol = "HTTP"
+    matcher  = "200"
+    timeout  = 10
+  }
+
   tags = {
     "Env": "${var.environment}"
   }
