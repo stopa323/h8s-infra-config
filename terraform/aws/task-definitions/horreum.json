@@ -1,0 +1,24 @@
+[
+  {
+    "name": "h8s-horreum",
+    "image": "stopa323/h8s-horreum:0.1.0.build.25",
+    "networkMode": "awsvpc",
+    "portMappings": [
+      {
+        "containerPort": 8003
+      }
+    ],
+    "command": [
+      "--host", "0.0.0.0",
+      "--port", "8003"
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "h8s",
+        "awslogs-region": "eu-west-1",
+        "awslogs-stream-prefix": "horreum"
+      }
+    }
+  }
+]
