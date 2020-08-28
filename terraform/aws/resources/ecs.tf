@@ -131,7 +131,38 @@ resource "aws_iam_policy" "ecs-task-exec" {
 EOF
 }
 
-resource "aws_iam_role" "ecs-task-exec" {
+resource "aws_iam_role_policy" "horreum-dynamodb" {
+  name = "horreum-dynamodb-access"
+  role = aws_iam_role.horreum-task.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SpecificTable",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:BatchGet*",
+        "dynamodb:DescribeStream",
+        "dynamodb:DescribeTable",
+        "dynamodb:Get*",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:BatchWrite*",
+        "dynamodb:CreateTable",
+        "dynamodb:Delete*",
+        "dynamodb:Update*",
+        "dynamodb:PutItem"
+      ],
+      "Resource": "arn:aws:dynamodb:*:*:table/terraform-resource-templates"
+  }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role" "task-trust" {
   name = "task-exec"
 
   assume_role_policy = <<EOF
@@ -151,8 +182,28 @@ resource "aws_iam_role" "ecs-task-exec" {
 EOF
 }
 
+resource "aws_iam_role" "horreum-task" {
+  name = "horreum-task"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
 resource "aws_iam_role_policy_attachment" "test" {
-  role       = aws_iam_role.ecs-task-exec.name
+  role       = aws_iam_role.task-trust.name
   policy_arn = aws_iam_policy.ecs-task-exec.arn
 }
 
@@ -163,7 +214,9 @@ resource "aws_ecs_task_definition" "horreum" {
   cpu                      = "512"
   memory                   = "1024"
 
-  execution_role_arn       = "${aws_iam_role.ecs-task-exec.arn}"
+  task_role_arn            = "${aws_iam_role.horreum-task.arn}"
+
+  execution_role_arn       = "${aws_iam_role.task-trust.arn}"
 
   # Todo: (for container definitions)
   #  * Pass ENVs for DynamoDB
