@@ -11,12 +11,11 @@ data "aws_region" "current" {}
 
 data "aws_availability_zones" "available" { state = "available" }
 
-
 resource "aws_vpc" "main" {
   cidr_block = var.vpc_cidr
 
   tags = {
-    "Name": "${var.name_prefix}-vpc",
+    "Name": "${var.project}-vpc",
     "Env": "${var.environment}"
   }
 }
@@ -28,7 +27,7 @@ resource "aws_subnet" "private" {
   vpc_id            = "${aws_vpc.main.id}"
 
   tags = {
-    "Name": "${var.name_prefix}-private-subnet-${count.index}",
+    "Name": "${var.project}-private-subnet-${count.index}",
     "Env": "${var.environment}"
   }
 }
@@ -42,7 +41,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    "Name": "${var.name_prefix}-public-subnet-${count.index}",
+    "Name": "${var.project}-public-subnet-${count.index}",
     "Env": "${var.environment}"
   }
 }
@@ -52,7 +51,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = "${aws_vpc.main.id}"
 
   tags = {
-    "Name": "${var.name_prefix}-igw",
+    "Name": "${var.project}-igw",
     "Env": "${var.environment}"
   }
 }
@@ -68,10 +67,10 @@ resource "aws_route" "internet_access" {
 resource "aws_eip" "nat-gw" {
   count      = "${var.az_count}"
   vpc        = true
-  depends_on = ["aws_internet_gateway.main"]
+  depends_on = [aws_internet_gateway.main]
 
   tags = {
-    "Name": "${var.name_prefix}-nat-eip-${count.index}",
+    "Name": "${var.project}-nat-eip-${count.index}",
     "Env": "${var.environment}"
   }
 }
@@ -82,7 +81,7 @@ resource "aws_nat_gateway" "gw" {
   allocation_id = "${element(aws_eip.nat-gw.*.id, count.index)}"
 
   tags = {
-    "Name": "${var.name_prefix}-nat-gw-${count.index}",
+    "Name": "${var.project}-nat-gw-${count.index}",
     "Env": "${var.environment}"
   }
 }
@@ -99,7 +98,7 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-    "Name": "${var.name_prefix}-nat-rt-${count.index}",
+    "Name": "${var.project}-nat-rt-${count.index}",
     "Env": "${var.environment}"
   }
 }

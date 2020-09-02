@@ -15,7 +15,9 @@ module "main" {
   source = "../../resources"
 
   environment      = "staging"
-  name_prefix      = "h8s"
 
   vpc_cidr         = "10.0.0.0/16"
+
+  # Horreum service
+  horreum_image_tag = "0.2.0"
 }
