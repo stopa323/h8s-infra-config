@@ -126,6 +126,45 @@ def print_help():
          "user": request.form["user_id"]})
 
 
+def print_deployment_triggered(username, env, horreum_image_tag):
+   blocks = [
+      {
+         "type": "context",
+         "elements": [
+            {
+               "type": "mrkdwn",
+               "text": f":male-construction-worker: Hello there. @{username} "
+                       f"demanded deployment ASAP"
+            }
+         ]
+      },
+      {
+         "type": "section",
+         "fields": [
+            {
+               "type": "mrkdwn",
+			   "text": "*Status*: `in-progress` :truck:"
+            },
+			{
+               "type": "mrkdwn",
+               "text": f"*Environment*: `{env}`"
+            }
+		 ]
+	  },
+	  {
+         "type": "context",
+         "elements": [
+            {
+               "type": "mrkdwn",
+               "text": f"*HORREUM SERVICE*\ndocker-image-tag: "
+                       f"`{horreum_image_tag}`"
+			}
+		 ]
+	  }
+   ]
+   client.chat_postMessage(channel=SLACK_CHANNEL, blocks=blocks, link_names=1)
+
+
 @app.route("/", methods=["POST"])
 def root_dispatcher():
    command = request.form["text"]
@@ -161,8 +200,10 @@ def interactions_handler():
    payload = json.loads(request.form["payload"])
    values = payload["view"]["state"]["values"]
 
-   print(get_environment(values))
-   print(get_horreum_image_tag(values))
+   username = payload["user"]["username"]
+
+   print_deployment_triggered(username, get_environment(values),
+                              get_horreum_image_tag(values))
 
    return Response()
 
