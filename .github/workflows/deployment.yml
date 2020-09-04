@@ -9,9 +9,8 @@ jobs:
 
     steps:
       - name: deployment-test
-        run: echo $GITHUB
-        env:
-          GITHUB: ${{ github }}
+        run: echo ${{ github }}
+
 #      - name: Initialize deployment status
 #        uses: deliverybot/deployment-status@v1
 #        with:
