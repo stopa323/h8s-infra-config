@@ -9,84 +9,106 @@ FLASK_PORT = getenv("FLASK_PORT")
 if not (SLACK_API_TOKEN and SLACK_CHANNEL and FLASK_PORT):
     raise EnvironmentError("Check your env variables. Some are missing")
 
-DEPLOY_MODAL = {
-   "type": "modal",
-   "title": {
-      "type": "plain_text",
-      "text": "Deploy environment"
-   },
-   "submit": {
-      "type": "plain_text",
-      "text": "Deploy"
-   },
-   "close": {
-      "type": "plain_text",
-      "text": "Cancel"
-   },
-   "blocks": [
-      {
-         "type": "section",
-         "text": {
-            "type": "plain_text",
-            "text": "Adjust parameters to customize your deployment."
-         }
-      },
-      {
-         "type": "divider"
-      },
-      {
-         "type": "input",
-         "block_id": "var-environment",
-         "element": {
-            "type": "radio_buttons",
-            "action_id": "aid-environment",
-            "options": [
-               {
-                  "text": {
-                     "type": "plain_text",
-                     "text": "Staging (QA testing)"
-                  },
-                  "value": "staging"
-               }
-            ]
-         },
-         "label": {
-            "type": "plain_text",
-            "text": "Environment"
-         }
-      },
-      {
-         "type": "divider"
-      },
-      {
-         "type": "section",
-         "text": {
-            "type": "mrkdwn",
-            "text": "*Horreum service*"
-         }
-      },
-      {
-         "type": "input",
-         "block_id": "var-horreum-image-tag",
-         "element": {
-            "type": "plain_text_input",
-            "action_id": "aid-horreum-image-tag"
-         },
-         "label": {
-            "type": "plain_text",
-            "text": "Docker image tag"
-         }
-      }
-   ]
-}
-
 app = Flask(__name__)
 client = WebClient(token=SLACK_API_TOKEN)
 
 
 def show_deploy_modal():
+   view = {
+       "title": {
+           "type": "plain_text",
+           "text": "Deploy environment"
+       },
+       "submit": {
+           "type": "plain_text",
+           "text": "Deploy"
+       },
+       "type": "modal",
+       "close": {
+           "type": "plain_text",
+           "text": "Cancel"
+       },
+       "blocks": [
+           {
+               "type": "section",
+               "text": {
+                   "type": "plain_text",
+                   "text": "Adjust parameters to customize your deployment."
+               }
+           },
+           {
+               "type": "divider"
+           },
+           {
+               "type": "context",
+               "elements": [
+                   {
+                       "type": "mrkdwn",
+                       "text": "*GLOBAL*"
+                   }
+               ]
+           },
+           {
+               "type": "input",
+               "block_id": "var-environment",
+               "element": {
+                   "type": "radio_buttons",
+                   "action_id": "aid-environment",
+                   "initial_option": {
+                       "text": {
+                           "type": "plain_text",
+                           "text": "Staging"
+                       },
+                       "value": "staging"
+                   },
+                   "options": [
+                       {
+                           "text": {
+                               "type": "plain_text",
+                               "text": "Staging"
+                           },
+                           "value": "staging"
+                       }
+                   ]
+               },
+               "label": {
+                   "type": "plain_text",
+                   "text": "environment"
+               }
+           },
+           {
+               "type": "divider"
+           },
+           {
+               "type": "context",
+               "elements": [
+                   {
+                       "type": "mrkdwn",
+                       "text": "*HORREUM SERVICE*"
+                   }
+               ]
+           },
+           {
+               "type": "input",
+               "block_id": "var-horreum-image-tag",
+               "element": {
+                   "type": "plain_text_input",
+                   "action_id": "aid-horreum-image-tag",
+                   "initial_value": "0.2.0",
+                   "placeholder": {
+                       "type": "plain_text",
+                       "text": "Enter tag of Docker image"
+                   }
+               },
+               "label": {
+                   "type": "plain_text",
+                   "text": "image-tag"
+               }
+           }
+       ]
+   }
    trigger_id = request.form["trigger_id"]
-   client.views_open(trigger_id=trigger_id, view=DEPLOY_MODAL)
+   client.views_open(trigger_id=trigger_id, view=view)
 
 
 def show_destroy_modal():
