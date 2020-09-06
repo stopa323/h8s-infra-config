@@ -19,7 +19,7 @@ jobs:
         with:
           token: "${{ github.token }}"
           state: "success"
-          deployment_id: ${{ github.even.deployment.id }}
+          deployment_id: ${{ github.event.deployment.id }}
           description: ${{ github.event.deployment.description }}
 
 #      - name: Initialize deployment status
