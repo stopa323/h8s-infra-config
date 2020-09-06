@@ -191,7 +191,7 @@ class SlackMessenger:
                 "blocks": blocks,
                 "user": self._f.command.user_id})
 
-    def print_deployment_triggered(self):
+    def print_env_create_requested(self):
         """Prints message that confirms env-create deployment was created."""
         blocks = [
             {
@@ -225,6 +225,23 @@ class SlackMessenger:
                         "type": "mrkdwn",
                         "text": f"*HORREUM SERVICE*\ndocker-image-tag: "
                                 f"`{self._f.view.values.horreum_image_tag}`"
+                    }
+                ]
+            }
+        ]
+        client.chat_postMessage(channel=SLACK_CHANNEL, blocks=blocks,
+                                link_names=1)
+
+    def print_env_destroy_requested(self):
+        blocks = [
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f":hammer: @{self._f.view.user} approved "
+                                f"hammering down `{self._f.view.values.environment}`"
+                                f" environment.\n*Status*:\t`in-progress`"
                     }
                 ]
             }
@@ -411,9 +428,10 @@ def view_submissions_dispatcher():
 
     if form.view.is_env_deploy_submission():
         github.create_deployment()
-        messenger.print_deployment_triggered()
+        messenger.print_env_create_requested()
     elif form.view.is_env_destroy_submission():
         github.destroy_deployment()
+        messenger.print_env_destroy_requested()
     else:
         return Response(status=400,
                         response="Unknown view submission")
