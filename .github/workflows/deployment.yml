@@ -4,9 +4,27 @@ name: Deployment lifecycle
 on: ['deployment']
 
 jobs:
-  staging:
+  destroy-environment:
+    if: github.event.deployment.task == "destroy-environment"
     runs-on: ubuntu-latest
-
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+        
+      - name: Update deployment status (inactive)
+        if: success()
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "inactive"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+          
+  deploy-environment:
+    if: github.event.deployment.task == "deploy-environment"
+    runs-on: ubuntu-latest
     steps:
       - name: Dump GitHub context
         env:
