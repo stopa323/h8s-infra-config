@@ -5,7 +5,7 @@ on: ['deployment']
 
 jobs:
   destroy-environment:
-    if: github.event.deployment.task == "destroy-environment"
+    if: github.event.deployment.task == 'destroy-environment'
     runs-on: ubuntu-latest
     steps:
       - name: Dump GitHub context
@@ -23,7 +23,7 @@ jobs:
           description: ${{ github.event.deployment.description }}
           
   deploy-environment:
-    if: github.event.deployment.task == "deploy-environment"
+    if: github.event.deployment.task == 'deploy-environment'
     runs-on: ubuntu-latest
     steps:
       - name: Dump GitHub context
