@@ -39,8 +39,22 @@ class GithubClient:
             "required_contexts": [],
             "task": "deploy-environment"
         }
-        response = requests.post(url, json=payload, headers=self.HEADERS)
 
+        response = requests.post(url, json=payload, headers=self.HEADERS)
+        response.raise_for_status()
+
+    def destroy_deployment(self):
+        url = f"{self.URL}/repos/stopa323/h8s-infra-config/deployments"
+        payload = {
+            "auto_merge": False,
+            "environment": self._f.view.values.environment,
+            "payload": {},
+            "ref": "bob-bot-dev",
+            "required_contexts": [],
+            "task": "destroy-environment"
+        }
+
+        response = requests.post(url, json=payload, headers=self.HEADERS)
         response.raise_for_status()
 
 
@@ -106,6 +120,14 @@ class SlackForm:
 
         def is_submission(self):
             return "view_submission" == self._p["type"]
+
+        def is_env_deploy_submission(self):
+            return (self.is_submission() and
+                    "id-deploy-environment-modal" == self._p["view"]["callback_id"])
+
+        def is_env_destroy_submission(self):
+            return (self.is_submission() and
+                    "id-destroy-environment-modal" == self._p["view"]["callback_id"])
 
         class Values:
 
@@ -212,6 +234,7 @@ class SlackMessenger:
 
     def show_deploy_modal(self):
         view = {
+            "type": "modal",
             "title": {
                 "type": "plain_text",
                 "text": "Deploy environment"
@@ -220,7 +243,6 @@ class SlackMessenger:
                 "type": "plain_text",
                 "text": "Deploy"
             },
-            "type": "modal",
             "close": {
                 "type": "plain_text",
                 "text": "Cancel"
@@ -302,15 +324,59 @@ class SlackMessenger:
                         "text": "image-tag"
                     }
                 }
-            ]
+            ],
+            "callback_id": "id-deploy-environment-modal"
         }
         client.views_open(trigger_id=self._f.command.trigger_id, view=view)
 
     def show_destroy_modal(self):
-        print("DESTROY")
-        # repo = g.gget_repo("stopa323/h8s-infra-config")
-        # repo.create_deployment("bob-bot-dev", auto_merge=False,
-        #                        task="destroy-environment")
+        view = {
+            "type": "modal",
+            "title": {
+                "type": "plain_text",
+                "text": "Destroy environment"
+            },
+            "submit": {
+                "type": "plain_text",
+                "text": "Destroy"
+            },
+            "close": {
+                "type": "plain_text",
+                "text": "Cancel"
+            },
+            "blocks": [
+                {
+                    "type": "input",
+                    "block_id": "var-environment",
+                    "element": {
+                        "type": "radio_buttons",
+                        "action_id": "aid-environment",
+                        "initial_option": {
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Staging"
+                            },
+                            "value": "staging"
+                        },
+                        "options": [
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Staging"
+                                },
+                                "value": "staging"
+                            }
+                        ]
+                    },
+                    "label": {
+                        "type": "plain_text",
+                        "text": "Select environment to destroy"
+                    }
+                }
+            ],
+            "callback_id": "id-destroy-environment-modal"
+        }
+        client.views_open(trigger_id=self._f.command.trigger_id, view=view)
 
 
 @app.route("/", methods=["POST"])
@@ -335,7 +401,7 @@ def command_dispatcher():
 @app.route("/submissions", methods=["POST"])
 def view_submissions_dispatcher():
     form = SlackForm(request)
-    if not form.view or not form.view.is_submission():
+    if not form.view:
         return Response(status=400,
                         response="Non-submission payload received on "
                                  "view-submission-dispatcher endpoint")
@@ -343,8 +409,14 @@ def view_submissions_dispatcher():
     messenger = SlackMessenger(form)
     github = GithubClient(form)
 
-    github.create_deployment()
-    messenger.print_deployment_triggered()
+    if form.view.is_env_deploy_submission():
+        github.create_deployment()
+        messenger.print_deployment_triggered()
+    elif form.view.is_env_destroy_submission():
+        github.destroy_deployment()
+    else:
+        return Response(status=400,
+                        response="Unknown view submission")
 
     return Response()
 
