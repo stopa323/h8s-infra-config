@@ -25,7 +25,7 @@ jobs:
       - name: Update Slack message with status
         uses: fjogeleit/http-request-action@v1.4.1
         with:
-          url: "${{ secrets.BASIC_AUTH_UN }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
           method: POST
           data: '{"deploymentResult": "success"}'
           
