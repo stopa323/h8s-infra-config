@@ -23,11 +23,11 @@ jobs:
           description: ${{ github.event.deployment.description }}
 
       - name: Update Slack message with status
-        uses: satak/webrequest-action@v1.2.3
+        uses: fjogeleit/http-request-action@v1.4.1
         with:
           url: "${{ secrets.BASIC_AUTH_UN }}/updates/${{ github.event.deployment.payload.msg_ts }}"
           method: POST
-          payload: '{"status": "success"}'
+          payload: '{"deploymentResult": "success"}'
           
   deploy-environment:
     if: github.event.deployment.task == 'deploy-environment'
