@@ -21,6 +21,13 @@ jobs:
           state: "inactive"
           deployment_id: ${{ github.event.deployment.id }}
           description: ${{ github.event.deployment.description }}
+
+      - name: Update Slack message with status
+        uses: satak/webrequest-action@v1.2.3
+        with:
+          url: "${{ secrets.BASIC_AUTH_UN }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          method: POST
+          payload: '{"status": "success"}'
           
   deploy-environment:
     if: github.event.deployment.task == 'deploy-environment'

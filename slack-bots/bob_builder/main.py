@@ -27,13 +27,16 @@ class GithubClient:
     def __init__(self, form):
         self._f = form
 
-    def create_deployment(self):
+    def create_deployment(self, msg_ts):
         url = f"{self.URL}/repos/stopa323/h8s-infra-config/deployments"
         payload = {
             "auto_merge": False,
             "environment": self._f.view.values.environment,
             "payload": {
-                "horreum-image-tag": self._f.view.values.horreum_image_tag,
+                "env": {
+                    "horreum-image-tag": self._f.view.values.horreum_image_tag,
+                },
+                "msg_ts": msg_ts
             },
             "ref": "bob-bot-dev",
             "required_contexts": [],
@@ -43,12 +46,14 @@ class GithubClient:
         response = requests.post(url, json=payload, headers=self.HEADERS)
         response.raise_for_status()
 
-    def destroy_deployment(self):
+    def destroy_deployment(self, msg_ts):
         url = f"{self.URL}/repos/stopa323/h8s-infra-config/deployments"
         payload = {
             "auto_merge": False,
             "environment": self._f.view.values.environment,
-            "payload": {},
+            "payload": {
+                "msg_ts": msg_ts
+            },
             "ref": "bob-bot-dev",
             "required_contexts": [],
             "task": "destroy-environment"
@@ -229,8 +234,9 @@ class SlackMessenger:
                 ]
             }
         ]
-        client.chat_postMessage(channel=SLACK_CHANNEL, blocks=blocks,
-                                link_names=1)
+        response = client.chat_postMessage(
+            channel=SLACK_CHANNEL, blocks=blocks, link_names=1)
+        return response.data["ts"]
 
     def print_env_destroy_requested(self):
         blocks = [
@@ -246,8 +252,9 @@ class SlackMessenger:
                 ]
             }
         ]
-        client.chat_postMessage(channel=SLACK_CHANNEL, blocks=blocks,
-                                link_names=1)
+        response = client.chat_postMessage(
+            channel=SLACK_CHANNEL, blocks=blocks,link_names=1)
+        return response.data["ts"]
 
     def show_deploy_modal(self):
         view = {
@@ -427,15 +434,20 @@ def view_submissions_dispatcher():
     github = GithubClient(form)
 
     if form.view.is_env_deploy_submission():
-        github.create_deployment()
-        messenger.print_env_create_requested()
+        msg_ts = messenger.print_env_create_requested()
+        github.create_deployment(msg_ts)
     elif form.view.is_env_destroy_submission():
-        github.destroy_deployment()
-        messenger.print_env_destroy_requested()
+        msg_ts = messenger.print_env_destroy_requested()
+        github.destroy_deployment(msg_ts)
     else:
         return Response(status=400,
                         response="Unknown view submission")
 
+    return Response()
+
+
+@app.route("/updates/<message_ts>", methods=["POST"])
+def updates_dispatcher(message_ts):
     return Response()
 
 
