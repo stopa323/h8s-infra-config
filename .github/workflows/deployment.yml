@@ -48,11 +48,11 @@ jobs:
           description: ${{ github.event.deployment.description }}
 
       - name: Update Slack message with status
-          uses: fjogeleit/http-request-action@v1.4.1
-          with:
-            url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
-            method: POST
-            data: '{"deploymentResult": "success"}'
+        uses: fjogeleit/http-request-action@v1.4.1
+        with:
+          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          method: POST
+          data: '{"deploymentResult": "success"}'
 
 #      - name: Initialize deployment status
 #        uses: deliverybot/deployment-status@v1
