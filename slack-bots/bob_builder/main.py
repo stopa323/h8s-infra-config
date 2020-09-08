@@ -245,9 +245,7 @@ class SlackMessenger:
                 "elements": [
                     {
                         "type": "mrkdwn",
-                        "text": f":hammer: @{self._f.view.user} approved "
-                                f"hammering down `{self._f.view.values.environment}`"
-                                f" environment.\n*Status*:\t`in-progress`"
+                        "text": f":recycle: Hammering down `{self._f.view.values.environment}` environment for @{self._f.view.user}"
                     }
                 ]
             }
@@ -448,7 +446,22 @@ def view_submissions_dispatcher():
 
 @app.route("/updates/<message_ts>", methods=["POST"])
 def updates_dispatcher(message_ts):
-    return Response()
+    result = request.json.get("deploymentResult")
+
+    if "success" == result:
+        client.reactions_add(
+            channel=SLACK_CHANNEL,
+            timestamp=message_ts,
+            name="heavy_check_mark")
+    elif "fail" == result:
+        client.reactions_add(
+            channel=SLACK_CHANNEL,
+            timestamp=message_ts,
+            name="x")
+    else:
+        return Response(status=400, response=f"Unknown result: {result}")
+
+    return Response(status=200, response="Ok")
 
 
 if __name__ == "__main__":
