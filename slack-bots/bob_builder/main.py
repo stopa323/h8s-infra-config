@@ -204,22 +204,9 @@ class SlackMessenger:
                 "elements": [
                     {
                         "type": "mrkdwn",
-                        "text": f":male-construction-worker: Hello there. "
-                                f"@{self._f.view.user} demanded deployment ASAP"
-                    }
-                ]
-            },
-            {
-                "type": "section",
-                "fields": [
-                    {
-                        "type": "mrkdwn",
-                        "text": "*Status*: `in-progress` :truck:"
-                    },
-                    {
-                        "type": "mrkdwn",
-                        "text": f"*Environment*: "
-                                f"`{self._f.view.values.environment}`"
+                        "text": f":construction: Creating environment "
+                                f"`{self._f.view.values.environment}` "
+                                f"for @{self._f.view.user}"
                     }
                 ]
             },
