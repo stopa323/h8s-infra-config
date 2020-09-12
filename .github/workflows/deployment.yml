@@ -7,27 +7,22 @@ jobs:
   destroy-environment:
     if: github.event.deployment.task == 'destroy-environment'
     runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.step1.outputs.test }}
     steps:
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
-        
-      - name: Update deployment status (inactive)
+
+      - name: Update deployment status (in-progress)
         if: success()
         uses: chrnorm/deployment-status@releases/v1
         with:
           token: "${{ github.token }}"
-          state: "inactive"
+          state: "in_progress"
           deployment_id: ${{ github.event.deployment.id }}
           description: ${{ github.event.deployment.description }}
-
-      - name: Update Slack message with status
-        uses: fjogeleit/http-request-action@v1.4.1
-        with:
-          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
-          method: POST
-          data: '{"deploymentResult": "fail"}'
           
   deploy-environment:
     if: github.event.deployment.task == 'deploy-environment'
@@ -37,22 +32,15 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
-      
-      - name: Update deployment status (success)
+
+      - name: Update deployment status (in-progress)
         if: success()
         uses: chrnorm/deployment-status@releases/v1
         with:
           token: "${{ github.token }}"
-          state: "success"
+          state: "in_progress"
           deployment_id: ${{ github.event.deployment.id }}
           description: ${{ github.event.deployment.description }}
-
-      - name: Update Slack message with status
-        uses: fjogeleit/http-request-action@v1.4.1
-        with:
-          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
-          method: POST
-          data: '{"deploymentResult": "success"}'
 
 #      - name: Initialize deployment status
 #        uses: deliverybot/deployment-status@v1
@@ -99,3 +87,50 @@ jobs:
 #        with:
 #          state: failure
 #          token: ${{ github.token }}
+
+  update-status:
+    needs: [deploy-environment, destroy-environment]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update deployment status (active)
+        if: needs.deploy-environment.result == 'success'
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "success"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+
+      - name: Update deployment status (inactive)
+        if: needs.destroy-environment.result == 'success'
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "inactive"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+
+      - name: Update Slack message with status (success)
+        if: needs.deploy-environment.result == 'success' || needs.destroy-environment.result == 'success'
+        uses: fjogeleit/http-request-action@v1.4.1
+        with:
+          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          method: POST
+          data: '{"deploymentResult": "success"}'
+
+      - name: Update deployment status (error)
+        if: needs.deploy-environment.result == 'fail' || needs.destroy-environment.result == 'fail'
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "error"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+
+      - name: Update Slack message with status (fail)
+        if: needs.deploy-environment.result == 'fail' || needs.destroy-environment.result == 'fail'
+        uses: fjogeleit/http-request-action@v1.4.1
+        with:
+          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          method: POST
+          data: '{"deploymentResult": "success"}'
