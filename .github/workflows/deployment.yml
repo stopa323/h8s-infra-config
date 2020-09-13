@@ -29,6 +29,11 @@ jobs:
     needs: [destroy-environment]
     runs-on: ubuntu-latest
     steps:
+      - name: Dump context
+        env:
+          _CONTEXT: ${{ toJson(needs.destroy-environment) }}
+        run: echo "$_CONTEXT"
+        
       - name: Update deployment status (inactive)
         if: needs.destroy-environment.result == 'success'
         uses: chrnorm/deployment-status@releases/v1
