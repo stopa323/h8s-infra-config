@@ -25,7 +25,7 @@ jobs:
         run: exit 0
 
   destroy-status-update:
-    if: always()
+    if: github.event.deployment.task == 'destroy-environment'
     needs: [destroy-environment]
     runs-on: ubuntu-latest
     steps:
@@ -84,7 +84,7 @@ jobs:
         run: exit 0
 
   deploy-status-update:
-    if: always()
+    if: github.event.deployment.task == 'deploy-environment'
     needs: [deploy-environment]
     runs-on: ubuntu-latest
     steps:
