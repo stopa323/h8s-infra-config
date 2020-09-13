@@ -25,6 +25,7 @@ jobs:
         run: exit 1
 
   destroy-status-update:
+    if: always()
     needs: [destroy-environment]
     runs-on: ubuntu-latest
     steps:
