@@ -21,8 +21,8 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
 
-      - name: Deploy success
-        run: echo SUCCESS
+      - name: Deploy fail
+        run: exit 1
 
   destroy-status-update:
     needs: [destroy-environment]
