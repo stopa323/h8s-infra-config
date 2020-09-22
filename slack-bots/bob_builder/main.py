@@ -1,18 +1,22 @@
+import json
+from typing import Optional
+
 import requests
 
-from flask import Flask, request, json, Response
 from slack import WebClient
 from os import getenv
 
+ROOT_PATH = getenv("ROOT_PATH")
 SLACK_API_TOKEN = getenv("SLACK_API_TOKEN")
 SLACK_CHANNEL = getenv("SLACK_CHANNEL")
-FLASK_PORT = getenv("FLASK_PORT")
 GITHUB_TOKEN = getenv("GITHUB_TOKEN")
 
-if not (SLACK_API_TOKEN and SLACK_CHANNEL and FLASK_PORT and GITHUB_TOKEN):
+if not (ROOT_PATH and
+        SLACK_API_TOKEN and
+        SLACK_CHANNEL and
+        GITHUB_TOKEN):
     raise EnvironmentError("Check your env variables. Some are missing")
 
-app = Flask(__name__)
 client = WebClient(token=SLACK_API_TOKEN)
 
 
@@ -67,7 +71,7 @@ class SlackForm:
     """Parser for messages incoming from slackbot."""
 
     def __init__(self, request):
-        if payload := request.form.get("payload"):
+        if payload := request.get("payload"):
             self._c = None
             self._v = SlackForm.View(payload)
         else:
@@ -89,15 +93,15 @@ class SlackForm:
 
         @property
         def name(self):
-            return self._r.form["text"]
+            return self._r["text"]
 
         @property
         def trigger_id(self):
-            return self._r.form["trigger_id"]
+            return self._r["trigger_id"]
 
         @property
         def user_id(self):
-            return self._r.form["user_id"]
+            return self._r["user_id"]
 
         def is_deploy(self):
             return "deploy" == self.name
@@ -388,32 +392,11 @@ class SlackMessenger:
         client.views_open(trigger_id=self._f.command.trigger_id, view=view)
 
 
-@app.route("/", methods=["POST"])
-def command_dispatcher():
-    form = SlackForm(request)
-    if not form.command:
-        return Response(status=400, response="Non-command payload received on "
-                                             "command-dispatcher endpoint")
-
-    messenger = SlackMessenger(form)
-
-    if form.command.is_deploy():
-        messenger.show_deploy_modal()
-    elif form.command.is_destroy():
-        messenger.show_destroy_modal()
-    else:
-        messenger.print_help()
-
-    return Response(status=200)
-
-
-@app.route("/submissions", methods=["POST"])
 def view_submissions_dispatcher():
-    form = SlackForm(request)
+    form = SlackForm(None)
     if not form.view:
-        return Response(status=400,
-                        response="Non-submission payload received on "
-                                 "view-submission-dispatcher endpoint")
+        return build_response(400, "Non-submission payload received on "
+                                   "view-submission-dispatcher endpoint")
 
     messenger = SlackMessenger(form)
     github = GithubClient(form)
@@ -425,15 +408,14 @@ def view_submissions_dispatcher():
         msg_ts = messenger.print_env_destroy_requested()
         github.destroy_deployment(msg_ts)
     else:
-        return Response(status=400,
-                        response="Unknown view submission")
+        return build_response(400, "Unknown view submission")
 
-    return Response()
+    return build_response()
 
 
-@app.route("/updates/<message_ts>", methods=["POST"])
 def updates_dispatcher(message_ts):
-    result = request.json.get("deploymentResult")
+    # result = request.json.get("deploymentResult")
+    result = "TMP"
 
     if "success" == result:
         client.reactions_add(
@@ -446,10 +428,51 @@ def updates_dispatcher(message_ts):
             timestamp=message_ts,
             name="x")
     else:
-        return Response(status=400, response=f"Unknown result: {result}")
+        return build_response(400, f"Unknown result: {result}")
 
-    return Response(status=200, response="Ok")
+    return build_response()
 
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=FLASK_PORT)
+def command_dispatcher(form_body: dict):
+    form = SlackForm(form_body)
+    if not form.command:
+        return build_response(400, "Non-command payload received on "
+                                   "command-dispatcher endpoint")
+
+    messenger = SlackMessenger(form)
+
+    if form.command.is_deploy():
+        messenger.show_deploy_modal()
+    elif form.command.is_destroy():
+        messenger.show_destroy_modal()
+    else:
+        messenger.print_help()
+
+    return build_response()
+
+
+def main_dispatcher(event, context):
+    path = event["path"]
+    body = event["body"]
+
+    if event["isBase64Encoded"]:
+        from base64 import b64decode
+        body = b64decode(body).decode("utf-8")
+
+    # Convert header form string to dictionary
+    form = {}
+    form_arguments = body.split("&")
+    for arg in form_arguments:
+        key, value = arg.split("=")
+        form[key] = value
+
+    if ROOT_PATH == path:
+        return command_dispatcher(form)
+
+    return build_response(400, f"Unknown path: {path}")
+
+
+def build_response(status_code: Optional[int] = 200,
+                   message: Optional[str] = "OK"):
+    response = dict(statusCode=status_code, body=message)
+    return response
