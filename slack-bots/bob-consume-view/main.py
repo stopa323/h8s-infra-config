@@ -6,16 +6,15 @@ import requests
 from slack import WebClient
 from os import getenv
 
-ROOT_PATH = getenv("ROOT_PATH")
 SLACK_API_TOKEN = getenv("SLACK_API_TOKEN")
 SLACK_CHANNEL = getenv("SLACK_CHANNEL")
 GITHUB_TOKEN = getenv("GITHUB_TOKEN")
 
-if not (ROOT_PATH and
-        SLACK_API_TOKEN and
+if not (SLACK_API_TOKEN and
         SLACK_CHANNEL and
         GITHUB_TOKEN):
     raise EnvironmentError("Check your env variables. Some are missing")
+
 
 client = WebClient(token=SLACK_API_TOKEN)
 
@@ -112,7 +111,7 @@ class SlackForm:
     class View:
 
         def __init__(self, payload):
-            self._p = json.loads(payload)
+            self._p = payload
 
             if self.is_submission():
                 self._v = SlackForm.View.Values(self._p["view"]["state"]["values"])
@@ -392,8 +391,8 @@ class SlackMessenger:
         client.views_open(trigger_id=self._f.command.trigger_id, view=view)
 
 
-def view_submissions_dispatcher():
-    form = SlackForm(None)
+def view_submissions_dispatcher(payload):
+    form = SlackForm(payload)
     if not form.view:
         return build_response(400, "Non-submission payload received on "
                                    "view-submission-dispatcher endpoint")
@@ -452,27 +451,36 @@ def command_dispatcher(form_body: dict):
 
 
 def main_dispatcher(event, context):
-    path = event["path"]
+    req_type = event["queryStringParameters"].get("type")
+    if not req_type:
+        return build_response(400, f"Request type not provided")
+
     body = event["body"]
 
     if event["isBase64Encoded"]:
         from base64 import b64decode
         body = b64decode(body).decode("utf-8")
 
-    # Convert header form string to dictionary
-    form = {}
-    form_arguments = body.split("&")
-    for arg in form_arguments:
-        key, value = arg.split("=")
-        form[key] = value
+    if "command" == req_type:
+        # Convert header form string to dictionary
+        form = {}
+        form_arguments = body.split("&")
+        for arg in form_arguments:
+            key, value = arg.split("=")
+            form[key] = value
 
-    if ROOT_PATH == path:
         return command_dispatcher(form)
+    elif "submission" == req_type:
+        from urllib.parse import unquote
+        unquoted_body = unquote(body)
+        str_payload = unquoted_body.split("payload=")[1]
+        payload = json.loads(str_payload)
+        return view_submissions_dispatcher(payload)
 
-    return build_response(400, f"Unknown path: {path}")
+    return build_response(400, f"Unknown request type: {req_type}")
 
 
 def build_response(status_code: Optional[int] = 200,
-                   message: Optional[str] = "OK"):
+                   message: Optional[str] = ""):
     response = dict(statusCode=status_code, body=message)
     return response
