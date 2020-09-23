@@ -4,52 +4,166 @@ name: Deployment lifecycle
 on: ['deployment']
 
 jobs:
-  staging:
+  destroy-environment:
+    if: github.event.deployment.task == 'destroy-environment'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Initialize deployment status
-        uses: deliverybot/deployment-status@v1
+      - name: Update deployment status (in-progress)
+        uses: chrnorm/deployment-status@releases/v1
         with:
-          state: pending
-          token: ${{ github.token }}
+          token: "${{ github.token }}"
+          state: "in_progress"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
 
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
-      - name: Terraform Setup
-        uses: hashicorp/setup-terraform@v1
-
-      - name: Terraform Init
-        run: terraform init terraform/aws/environments/stage
+      - name: Dump GitHub context
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
 
-      - name: Create staging environment
-        if: github.event.deployment.payload.operation == 'create'
-        run: terraform apply -auto-approve terraform/aws/environments/stage
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Destroy success
+        run: exit 0
 
-      - name: Destroy staging environment
-        if: github.event.deployment.payload.operation == 'destroy'
-        run: terraform destroy -auto-approve terraform/aws/environments/stage
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      - name: Activate deployment
-        if: success()
-        uses: deliverybot/deployment-status@v1
+  destroy-status-update:
+    if: github.event.deployment.task == 'destroy-environment'
+    needs: [destroy-environment]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update deployment status (inactive)
+        if: needs.destroy-environment.result == 'success'
+        uses: chrnorm/deployment-status@releases/v1
         with:
-          state: success
-          token: ${{ github.token }}
+          token: "${{ github.token }}"
+          state: "inactive"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
 
-      - name: Fail deployment
-        if: failure()
-        uses: deliverybot/deployment-status@v1
+      - name: Update Slack message with status (success)
+        if: needs.destroy-environment.result == 'success'
+        uses: fjogeleit/http-request-action@v1.4.1
         with:
-          state: failure
-          token: ${{ github.token }}
+          url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
+          method: POST
+          data: '{"deploymentResult": "success", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
+
+      - name: Update deployment status (error)
+        if: needs.destroy-environment.result == 'failure'
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "error"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+
+      - name: Update Slack message with status (fail)
+        if: needs.destroy-environment.result == 'failure'
+        uses: fjogeleit/http-request-action@v1.4.1
+        with:
+          url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
+          method: POST
+          data: '{"deploymentResult": "fail", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
+
+  deploy-environment:
+    if: github.event.deployment.task == 'deploy-environment'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update deployment status (in-progress)
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "in_progress"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+        
+      - name: Deploy success
+        run: exit 0
+
+  deploy-status-update:
+    if: github.event.deployment.task == 'deploy-environment'
+    needs: [deploy-environment]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update deployment status (active)
+        if: needs.deploy-environment.result == 'success'
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "success"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+
+      - name: Update Slack message with status (success)
+        if: needs.deploy-environment.result == 'success'
+        uses: fjogeleit/http-request-action@v1.4.1
+        with:
+          url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
+          method: POST
+          data: '{"deploymentResult": "success", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
+
+      - name: Update deployment status (error)
+        if: needs.deploy-environment.result == 'failure'
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "error"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+
+      - name: Update Slack message with status (fail)
+        if: needs.deploy-environment.result == 'failure'
+        uses: fjogeleit/http-request-action@v1.4.1
+        with:
+          url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
+          method: POST
+          data: '{"deploymentResult": "fail", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
+          
+#      - name: Initialize deployment status
+#        uses: deliverybot/deployment-status@v1
+#        with:
+#          state: pending
+#          token: ${{ github.token }}
+#
+#      - name: Checkout repo
+#        uses: actions/checkout@v2
+#
+#      - name: Terraform Setup
+#        uses: hashicorp/setup-terraform@v1
+#
+#      - name: Terraform Init
+#        run: terraform init terraform/aws/environments/stage
+#        env:
+#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#
+#      - name: Create staging environment
+#        if: github.event.deployment.payload.operation == 'create'
+#        run: terraform apply -auto-approve terraform/aws/environments/stage
+#        env:
+#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#
+#      - name: Destroy staging environment
+#        if: github.event.deployment.payload.operation == 'destroy'
+#        run: terraform destroy -auto-approve terraform/aws/environments/stage
+#        env:
+#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#
+#      - name: Activate deployment
+#        if: success()
+#        uses: deliverybot/deployment-status@v1
+#        with:
+#          state: success
+#          token: ${{ github.token }}
+#
+#      - name: Fail deployment
+#        if: failure()
+#        uses: deliverybot/deployment-status@v1
+#        with:
+#          state: failure
+#          token: ${{ github.token }}
