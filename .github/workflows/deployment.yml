@@ -88,8 +88,8 @@ jobs:
           description: ${{ github.event.deployment.description }}
 
       - name: Create environment
-        run: terraform apply -auto-approve \
-          -var horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }} \
+        run: terraform apply -auto-approve
+          -var horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }}
           terraform/aws/environments/stage
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
