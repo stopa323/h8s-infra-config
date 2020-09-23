@@ -42,9 +42,9 @@ jobs:
         if: needs.destroy-environment.result == 'success'
         uses: fjogeleit/http-request-action@v1.4.1
         with:
-          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
           method: POST
-          data: '{"deploymentResult": "success"}'
+          data: '{"deploymentResult": "success", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
 
       - name: Update deployment status (error)
         if: needs.destroy-environment.result == 'failure'
@@ -59,9 +59,9 @@ jobs:
         if: needs.destroy-environment.result == 'failure'
         uses: fjogeleit/http-request-action@v1.4.1
         with:
-          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
           method: POST
-          data: '{"deploymentResult": "fail"}'
+          data: '{"deploymentResult": "fail", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
 
   deploy-environment:
     if: github.event.deployment.task == 'deploy-environment'
@@ -101,9 +101,9 @@ jobs:
         if: needs.deploy-environment.result == 'success'
         uses: fjogeleit/http-request-action@v1.4.1
         with:
-          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
           method: POST
-          data: '{"deploymentResult": "success"}'
+          data: '{"deploymentResult": "success", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
 
       - name: Update deployment status (error)
         if: needs.deploy-environment.result == 'failure'
@@ -118,9 +118,9 @@ jobs:
         if: needs.deploy-environment.result == 'failure'
         uses: fjogeleit/http-request-action@v1.4.1
         with:
-          url: "${{ secrets.SLACK_BOT_URL }}/updates/${{ github.event.deployment.payload.msg_ts }}"
+          url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
           method: POST
-          data: '{"deploymentResult": "fail"}'
+          data: '{"deploymentResult": "fail", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
           
 #      - name: Initialize deployment status
 #        uses: deliverybot/deployment-status@v1
