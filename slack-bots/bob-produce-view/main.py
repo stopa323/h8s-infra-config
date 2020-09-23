@@ -1,7 +1,6 @@
-from typing import Optional
-
-from slack import WebClient
 from os import getenv
+from slack import WebClient
+from typing import Optional
 
 SLACK_API_TOKEN = getenv("SLACK_API_TOKEN")
 SLACK_CHANNEL = getenv("SLACK_CHANNEL")

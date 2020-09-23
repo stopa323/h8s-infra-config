@@ -1,4 +1,4 @@
-LAMBDA_NAME="slack-bob-command-dispatcher"
+LAMBDA_NAME="bob-consume-view"
 
 pip install --target ./package -r reqs.txt
 cd ./package
