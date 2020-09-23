@@ -1,4 +1,4 @@
-LAMBDA_NAME="bob-consume-view"
+LAMBDA_NAME="bob-update-status"
 
 pip install --target ./package -r reqs.txt
 cd ./package
