@@ -73,6 +73,9 @@ jobs:
       - name: Terraform Setup
         uses: hashicorp/setup-terraform@v1
 
+      - name: Install AWS CLI
+        uses: chrislennon/action-aws-cli@1.1
+
       - name: Terraform Init
         run: terraform init terraform/aws/environments/stage
         env:
@@ -80,8 +83,16 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Prepare terraform.tfvars
+        # Note: If any new parameter is to be added, run echo with append e.g.
+        #       echo param2=123 >> terraform.tfvars
         run: |
           echo horreum_image_tag=\"${{ github.event.deployment.payload.env.horreum-image-tag }}\" > terraform.tfvars
+
+      - name: Store variables in S3 bucket
+        run: aws s3 cp terraform.tfvars s3://h8s-terraform-state-eu-west-1/staging/terraform.tfstate
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       # - name: Update deployment status (in-progress)
       #   uses: chrnorm/deployment-status@releases/v1
