@@ -89,7 +89,7 @@ jobs:
           echo horreum_image_tag=\"${{ github.event.deployment.payload.env.horreum-image-tag }}\" > terraform.tfvars
 
       - name: Store variables in S3 bucket
-        run: aws s3 cp terraform.tfvars s3://h8s-terraform-state-eu-west-1/staging/terraform.tfstate
+        run: aws s3 cp terraform.tfvars s3://h8s-terraform-state-eu-west-1/staging/terraform.tfvars
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
