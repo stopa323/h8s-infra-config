@@ -16,13 +16,13 @@ jobs:
           deployment_id: ${{ github.event.deployment.id }}
           description: ${{ github.event.deployment.description }}
 
-      - name: Dump GitHub context
+      - name: Destroy environment
+        run: terraform destroy -auto-approve
+          -var horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }}
+          terraform/aws/environments/stage
         env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-
-      - name: Destroy success
-        run: exit 0
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   destroy-status-update:
     if: github.event.deployment.task == 'destroy-environment'
@@ -79,21 +79,29 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Update deployment status (in-progress)
-        uses: chrnorm/deployment-status@releases/v1
-        with:
-          token: "${{ github.token }}"
-          state: "in_progress"
-          deployment_id: ${{ github.event.deployment.id }}
-          description: ${{ github.event.deployment.description }}
+      - name: Prepare variables file
+        run: cat <<EOF > staging.tfvars
+          horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }}
+          EOF
 
-      - name: Create environment
-        run: terraform apply -auto-approve
-          -var horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }}
-          terraform/aws/environments/stage
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Print varfile
+        run: cat staging.tfvars
+
+      # - name: Update deployment status (in-progress)
+      #   uses: chrnorm/deployment-status@releases/v1
+      #   with:
+      #     token: "${{ github.token }}"
+      #     state: "in_progress"
+      #     deployment_id: ${{ github.event.deployment.id }}
+      #     description: ${{ github.event.deployment.description }}
+
+      # - name: Create environment
+      #   run: terraform plan -auto-approve
+      #     -var horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }}
+      #     terraform/aws/environments/stage
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   deploy-status-update:
     if: github.event.deployment.task == 'deploy-environment'
@@ -133,7 +141,7 @@ jobs:
           url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
           method: POST
           data: '{"deploymentResult": "fail", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
-          
+
 
 
 #
