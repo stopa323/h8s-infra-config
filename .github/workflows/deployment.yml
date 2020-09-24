@@ -80,9 +80,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Prepare variables file
-        run: cat <<EOF > staging.tfvars
-          horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }}
-          EOF
+        run: |
+          echo horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }} > staging.tfvars
 
       - name: Print varfile
         run: cat staging.tfvars
