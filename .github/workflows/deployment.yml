@@ -8,6 +8,30 @@ jobs:
     if: github.event.deployment.task == 'destroy-environment'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Install AWS CLI
+        uses: chrislennon/action-aws-cli@1.1
+
+      - name: Terraform Init
+        run: terraform init terraform/aws/environments/stage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Fetch variables from S3 bucket
+        run: aws s3 cp s3://h8s-terraform-state-eu-west-1/staging/terraform.tfvars terraform.tfvars
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Log terraform.tfvars
+        run: cat terraform.tfvars
+
       - name: Update deployment status (in-progress)
         uses: chrnorm/deployment-status@releases/v1
         with:
@@ -16,13 +40,11 @@ jobs:
           deployment_id: ${{ github.event.deployment.id }}
           description: ${{ github.event.deployment.description }}
 
-      - name: Dump GitHub context
+      - name: Destroy environment
+        run: terraform destroy -auto-approve terraform/aws/environments/stage
         env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-
-      - name: Destroy success
-        run: exit 0
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   destroy-status-update:
     if: github.event.deployment.task == 'destroy-environment'
@@ -67,6 +89,33 @@ jobs:
     if: github.event.deployment.task == 'deploy-environment'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Install AWS CLI
+        uses: chrislennon/action-aws-cli@1.1
+
+      - name: Terraform Init
+        run: terraform init terraform/aws/environments/stage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Prepare terraform.tfvars
+        # Note: If any new parameter is to be added, run echo with append e.g.
+        #       echo param2=123 >> terraform.tfvars
+        run: |
+          echo horreum_image_tag=\"${{ github.event.deployment.payload.env.horreum-image-tag }}\" > terraform.tfvars
+
+      - name: Store variables in S3 bucket
+        run: aws s3 cp terraform.tfvars s3://h8s-terraform-state-eu-west-1/staging/terraform.tfvars
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
       - name: Update deployment status (in-progress)
         uses: chrnorm/deployment-status@releases/v1
         with:
@@ -75,13 +124,11 @@ jobs:
           deployment_id: ${{ github.event.deployment.id }}
           description: ${{ github.event.deployment.description }}
 
-      - name: Dump GitHub context
+      - name: Create environment
+        run: terraform apply -auto-approve terraform/aws/environments/stage
         env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-        
-      - name: Deploy success
-        run: exit 0
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   deploy-status-update:
     if: github.event.deployment.task == 'deploy-environment'
@@ -121,31 +168,9 @@ jobs:
           url: "${{ secrets.SLACK_BOT_STATUS_UPDATE_URL }}"
           method: POST
           data: '{"deploymentResult": "fail", "msgId": "${{ github.event.deployment.payload.msg_ts }}"}'
-          
-#      - name: Initialize deployment status
-#        uses: deliverybot/deployment-status@v1
-#        with:
-#          state: pending
-#          token: ${{ github.token }}
-#
-#      - name: Checkout repo
-#        uses: actions/checkout@v2
-#
-#      - name: Terraform Setup
-#        uses: hashicorp/setup-terraform@v1
-#
-#      - name: Terraform Init
-#        run: terraform init terraform/aws/environments/stage
-#        env:
-#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#
-#      - name: Create staging environment
-#        if: github.event.deployment.payload.operation == 'create'
-#        run: terraform apply -auto-approve terraform/aws/environments/stage
-#        env:
-#          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+
+
 #
 #      - name: Destroy staging environment
 #        if: github.event.deployment.payload.operation == 'destroy'
@@ -153,17 +178,3 @@ jobs:
 #        env:
 #          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 #          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#
-#      - name: Activate deployment
-#        if: success()
-#        uses: deliverybot/deployment-status@v1
-#        with:
-#          state: success
-#          token: ${{ github.token }}
-#
-#      - name: Fail deployment
-#        if: failure()
-#        uses: deliverybot/deployment-status@v1
-#        with:
-#          state: failure
-#          token: ${{ github.token }}
