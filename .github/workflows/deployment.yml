@@ -29,24 +29,22 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Print variables
+      - name: Log terraform.tfvars
         run: cat terraform.tfvars
 
-      # - name: Update deployment status (in-progress)
-      #   uses: chrnorm/deployment-status@releases/v1
-      #   with:
-      #     token: "${{ github.token }}"
-      #     state: "in_progress"
-      #     deployment_id: ${{ github.event.deployment.id }}
-      #     description: ${{ github.event.deployment.description }}
-      #
-      # - name: Destroy environment
-      #   run: terraform destroy -auto-approve
-      #     -var horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }}
-      #     terraform/aws/environments/stage
-      #   env:
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Update deployment status (in-progress)
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "in_progress"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
+
+      - name: Destroy environment
+        run: terraform destroy -auto-approve terraform/aws/environments/stage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   destroy-status-update:
     if: github.event.deployment.task == 'destroy-environment'
@@ -118,16 +116,16 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      # - name: Update deployment status (in-progress)
-      #   uses: chrnorm/deployment-status@releases/v1
-      #   with:
-      #     token: "${{ github.token }}"
-      #     state: "in_progress"
-      #     deployment_id: ${{ github.event.deployment.id }}
-      #     description: ${{ github.event.deployment.description }}
+      - name: Update deployment status (in-progress)
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: "${{ github.token }}"
+          state: "in_progress"
+          deployment_id: ${{ github.event.deployment.id }}
+          description: ${{ github.event.deployment.description }}
 
-      - name: Plan environment
-        run: terraform plan terraform/aws/environments/stage
+      - name: Create environment
+        run: terraform apply -auto-approve terraform/aws/environments/stage
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
