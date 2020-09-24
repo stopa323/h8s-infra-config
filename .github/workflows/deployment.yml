@@ -81,7 +81,7 @@ jobs:
 
       - name: Prepare terraform.tfvars
         run: |
-          echo horreum_image_tag=${{ github.event.deployment.payload.env.horreum-image-tag }} > terraform.tfvars
+          echo horreum_image_tag=\"${{ github.event.deployment.payload.env.horreum-image-tag }}\" > terraform.tfvars
 
       # - name: Update deployment status (in-progress)
       #   uses: chrnorm/deployment-status@releases/v1
