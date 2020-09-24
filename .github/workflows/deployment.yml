@@ -92,7 +92,7 @@ jobs:
       #     description: ${{ github.event.deployment.description }}
 
       - name: Plan environment
-        run: terraform plan -auto-approve terraform/aws/environments/stage
+        run: terraform plan terraform/aws/environments/stage
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
